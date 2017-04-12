@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016  Andrew Gunnerson <andrewgunnerson@gmail.com>
+ * Copyright (C) 2016-2017  Andrew Gunnerson <andrewgunnerson@gmail.com>
  *
  * This file is part of MultiBootPatcher
  *
@@ -20,6 +20,10 @@
 #pragma once
 
 #include "mbcommon/common.h"
+
+#ifdef __cplusplus
+#  include <string>
+#endif
 
 #ifdef __cplusplus
 #  include <cstdarg>
@@ -85,3 +89,14 @@ MB_EXPORT int mb_str_replace(char **str, const char *from, const char *to,
                              size_t n, size_t *n_replaced);
 
 MB_END_C_DECLS
+
+#ifdef __cplusplus
+namespace mb
+{
+
+MB_PRINTF(1, 2)
+MB_EXPORT std::string format(const char *fmt, ...);
+MB_EXPORT std::string format_v(const char *fmt, va_list ap);
+
+}
+#endif

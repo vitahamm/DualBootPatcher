@@ -19,6 +19,8 @@
 
 #include "mbcommon/string.h"
 
+#include <vector>
+
 #include <cerrno>
 #include <climits>
 #include <cstdint>
@@ -589,3 +591,105 @@ int mb_str_replace(char **str, const char *from, const char *to,
 }
 
 MB_END_C_DECLS
+
+namespace mb
+{
+
+/*!
+ * \brief Format a string
+ *
+ * \note This uses the `*printf()` family of functions in the system's C
+ *       library. The format string may not be understood the same way by every
+ *       platform.
+ *
+ * \note The value of `errno` and `GetLastError()` (on Win32) are preserved if
+ *       this function does not fail.
+ *
+ * \param fmt Format string
+ * \param ... Format arguments
+ *
+ * \return Resulting string
+ *
+ * \throw std::runtime_error if the `*printf()` function fails
+ */
+std::string format(const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    std::string result = mb_format_v(fmt, ap);
+    va_end(ap);
+
+    return result;
+}
+
+/*!
+ * \brief Format a string using a `va_list`
+ *
+ * \note This uses the `*printf()` family of functions in the system's C
+ *       library. The format string may not be understood the same way by every
+ *       platform.
+ *
+ * \note The value of `errno` and `GetLastError()` (on Win32) are preserved if
+ *       this function does not fail.
+ *
+ * \param fmt Format string
+ * \param ap Format arguments as `va_list`
+ *
+ * \return Resulting string
+ *
+ * \throw std::runtime_error if the `*printf()` function fails
+ */
+std::string format_v(const char *fmt, va_list ap)
+{
+    static_assert(INT_MAX <= SIZE_MAX, "INT_MAX > SIZE_MAX");
+
+    int saved_errno;
+#ifdef _WIN32
+    int saved_error;
+#endif
+    std::vector<char> buf;
+    int ret;
+    va_list copy;
+
+    saved_errno = errno;
+#ifdef _WIN32
+    saved_error = GetLastError();
+#endif
+
+    va_copy(copy, ap);
+    ret = vsnprintf(nullptr, 0, fmt, ap);
+    va_end(copy);
+
+    if (ret < 0 || ret == INT_MAX) {
+#if MB_EXCEPTIONS
+        throw std::runtime_error("Failed to format string");
+#else
+        return {};
+#endif
+    }
+
+    buf.resize(static_cast<size_t>(ret) + 1);
+
+    va_copy(copy, ap);
+    ret = vsnprintf(buf.data(), buf.size(), fmt, ap);
+    va_end(copy);
+
+    if (ret < 0) {
+#if MB_EXCEPTIONS
+        throw std::runtime_error("Failed to format string");
+#else
+        return {};
+#endif
+    }
+
+    // Restore errno and Win32 error on success
+    errno = saved_errno;
+#ifdef _WIN32
+    SetLastError(saved_error);
+#endif
+
+    return buf.data();
+}
+
+}
