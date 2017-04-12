@@ -64,4 +64,5 @@ endif()
 
 # Needed for every target
 include(cmake/dependencies/jansson.cmake)
+include(cmake/dependencies/jsoncpp.cmake)
 include(cmake/dependencies/openssl.cmake)
