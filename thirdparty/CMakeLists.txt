@@ -203,6 +203,21 @@ else()
 endif()
 
 ################################################################################
+# jsoncpp for Android
+################################################################################
+
+set(JSONCPP_VER "1.8.0-1")
+
+if(MBP_TOP_LEVEL_BUILD)
+    get_prebuilt(jsoncpp ${JSONCPP_VER} armeabi-v7a SHA512=88a54fdf84679fb545d0d1c06c74da19f2cb024bcf8e784a5502bb5eab2c7322e40621d4c73836e78a513fd5c129f9effbac2b6017ab756ed7f04d5f930404ff)
+    get_prebuilt(jsoncpp ${JSONCPP_VER} arm64-v8a   SHA512=5dd04875442e45a737c66f6413b75b241d8fa3692b3dce983d1aa26c80af49aedce7089381b8a80bbbdc4c29e138cf9261957bf3764450fd6c5344ea3010fd20)
+    get_prebuilt(jsoncpp ${JSONCPP_VER} x86         SHA512=237c996908d51168d7d313eec93fcc6b7e7da305aab172c0046e5790a0dc07a7a04d0304ac347526ce4c88e0712cb97db905db07897d38a9068a8bea4ced2479)
+    get_prebuilt(jsoncpp ${JSONCPP_VER} x86_64      SHA512=e3ddeee497557a097e366e7807c720aa4a04a4a985b59f4a983624d81dbc4014985a65af0d6914536136e5b7f482bb06b0dd6539914093a3f64bcd1d9ca1899a)
+else()
+    set(THIRD_PARTY_JSONCPP_DIR "${MBP_PREBUILTS_BINARY_DIR}/jsoncpp/${JSONCPP_VER}" PARENT_SCOPE)
+endif()
+
+################################################################################
 # libsepol for Android
 ################################################################################
 
