@@ -1,0 +1,60 @@
+# Copyright (C) 2017  Andrew Gunnerson <andrewgunnerson@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+pkgname=jsoncpp
+pkgver=1.8.0
+pkgrel=1
+pkgdesc="C++ library for interacting with JSON"
+arch=(armv7 aarch64 x86 x86_64)
+url="https://github.com/open-source-parsers/jsoncpp"
+license=(MIT custom:Public_Domain)
+source=("git+https://github.com/open-source-parsers/jsoncpp.git#tag=${pkgver}"
+        'https://raw.githubusercontent.com/chenxiaolong/DualBootPatcher/v9.2.0/cmake/android.toolchain.cmake')
+sha512sums=('SKIP'
+            'f5599de8338d3664282298118b77b110cfc6fd6a18ad62d18d8011a7bac0e3034bef8be678a64ec244f80f25ad1f3603e6643016230fd8b8968bd83857eb19af')
+
+build() {
+    cd "${pkgname}"
+
+    local abi api
+    abi=$(android_get_abi_name)
+    api=android-17
+
+    mkdir -p "build_${abi}"
+    cd "build_${abi}"
+
+    local cxxflags='-fexceptions'
+
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_FLAGS="${cxxflags}" \
+        -DCMAKE_TOOLCHAIN_FILE="${srcdir}/android.toolchain.cmake" \
+        -DANDROID_ABI="${abi}" \
+        -DANDROID_PLATFORM="${api}" \
+        -DJSONCPP_WITH_TESTS=OFF
+
+    make
+}
+
+package() {
+    cd "${pkgname}"
+
+    local abi
+    abi=$(android_get_abi_name)
+
+    install -dm755 "${pkgdir}"/{lib,include}/
+    cp -a include/. "${pkgdir}"/include/
+    install -m644 "build_${abi}"/src/lib_json/libjsoncpp.a "${pkgdir}"/lib/
+}
