@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2016  Andrew Gunnerson <andrewgunnerson@gmail.com>
+ * Copyright (C) 2017  Andrew Gunnerson <andrewgunnerson@gmail.com>
  *
  * This file is part of MultiBootPatcher
  *
@@ -17,19 +17,10 @@
  * along with MultiBootPatcher.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include <sys/types.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-size_t string_array_length(char const * const *array);
-char ** string_array_dup(char const * const *array);
-char ** string_array_new(size_t n);
-void string_array_free(char **array);
-
-#ifdef __cplusplus
+int main(int argc, char *argv[])
+{
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
-#endif

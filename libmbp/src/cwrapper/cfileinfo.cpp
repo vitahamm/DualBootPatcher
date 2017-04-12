@@ -113,6 +113,7 @@ void mbp_fileinfo_set_output_path(CFileInfo *info, const char *path)
     fi->setOutputPath(path);
 }
 
+#if 0
 /*!
  * \brief Target device
  *
@@ -141,6 +142,7 @@ void mbp_fileinfo_set_device(CFileInfo *info, struct Device *device)
     CAST(info);
     fi->setDevice(device);
 }
+#endif
 
 char * mbp_fileinfo_rom_id(const CFileInfo *info)
 {

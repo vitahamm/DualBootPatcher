@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016  Andrew Gunnerson <andrewgunnerson@gmail.com>
+ * Copyright (C) 2016-2017  Andrew Gunnerson <andrewgunnerson@gmail.com>
  *
  * This file is part of MultiBootPatcher
  *
@@ -23,59 +23,50 @@
 
 #include <getopt.h>
 
-#include <jansson.h>
+#include <json/json.h>
+#include <json/writer.h>
 #include <yaml-cpp/yaml.h>
 
 #include "mbdevice/json.h"
-#include "mbdevice/validate.h"
 
 
-static void * xmalloc(size_t size)
-{
-    void *result = malloc(size);
-    if (!result) {
-        abort();
-    }
-    return result;
-}
-
-static json_t * yaml_node_to_json_node(const YAML::Node &yaml_node)
+static Json::Value yaml_node_to_json_node(const YAML::Node &yaml_node)
 {
     switch (yaml_node.Type()) {
     case YAML::NodeType::Null:
-        return json_object();
+        return Json::nullValue;
 
     case YAML::NodeType::Scalar:
         try {
-            return json_integer(yaml_node.as<json_int_t>());
+            return yaml_node.as<Json::LargestInt>();
         } catch (const YAML::BadConversion &e) {}
         try {
-            return json_real(yaml_node.as<double>());
+            return yaml_node.as<double>();
         } catch (const YAML::BadConversion &e) {}
         try {
-            return json_boolean(yaml_node.as<bool>());
+            return yaml_node.as<bool>();
         } catch (const YAML::BadConversion &e) {}
         try {
-            return json_string(yaml_node.as<std::string>().c_str());
+            return yaml_node.as<std::string>();
         } catch (const YAML::BadConversion &e) {}
         throw std::runtime_error("Cannot convert scalar value to known type");
 
     case YAML::NodeType::Sequence: {
-        json_t *array = json_array();
+        Json::Value array;
 
         for (auto const &item : yaml_node) {
-            json_array_append_new(array, yaml_node_to_json_node(item));
+            array.append(yaml_node_to_json_node(item));
         }
 
         return array;
     }
 
     case YAML::NodeType::Map: {
-        json_t *object = json_object();
+        Json::Value object;
 
         for (auto const &item : yaml_node) {
-            json_object_set_new(object, item.first.as<std::string>().c_str(),
-                                yaml_node_to_json_node(item.second));
+            object[item.first.as<std::string>()] =
+                    yaml_node_to_json_node(item.second);
         }
 
         return object;
@@ -87,26 +78,26 @@ static json_t * yaml_node_to_json_node(const YAML::Node &yaml_node)
     }
 }
 
-static void print_json_error(const char *path, MbDeviceJsonError *error)
+static void print_json_error(const std::string &path,
+                             const mb::device::JsonError &error)
 {
-    fprintf(stderr, "%s: Error: ", path);
+    fprintf(stderr, "%s: Error: ", path.c_str());
 
-    switch (error->type) {
-    case MB_DEVICE_JSON_STANDARD_ERROR:
-        fprintf(stderr, "Internal error\n");
+    switch (error.type) {
+    case mb::device::JsonErrorType::PARSE_ERROR:
+        fprintf(stderr, "Failed to parse generated JSON: %s\n",
+                error.parser_msg.c_str());
         break;
-    case MB_DEVICE_JSON_PARSE_ERROR:
-        fprintf(stderr, "Failed to parse generated JSON\n");
-        break;
-    case MB_DEVICE_JSON_MISMATCHED_TYPE:
+    case mb::device::JsonErrorType::MISMATCHED_TYPE:
         fprintf(stderr, "Expected %s, but found %s at %s\n",
-                error->expected_type, error->actual_type, error->context);
+                error.expected_type.c_str(), error.actual_type.c_str(),
+                error.context.c_str());
         break;
-    case MB_DEVICE_JSON_UNKNOWN_KEY:
-        fprintf(stderr, "Unknown key at %s\n", error->context);
+    case mb::device::JsonErrorType::UNKNOWN_KEY:
+        fprintf(stderr, "Unknown key at %s\n", error.context.c_str());
         break;
-    case MB_DEVICE_JSON_UNKNOWN_VALUE:
-        fprintf(stderr, "Unknown value at %s\n", error->context);
+    case mb::device::JsonErrorType::UNKNOWN_VALUE:
+        fprintf(stderr, "Unknown value at %s\n", error.context.c_str());
         break;
     default:
         fprintf(stderr, "Unknown error\n");
@@ -114,27 +105,31 @@ static void print_json_error(const char *path, MbDeviceJsonError *error)
     }
 }
 
-static void print_validation_error(const char *path, const char *id,
+static void print_validation_error(const std::string &path,
+                                   const std::string &id,
                                    uint64_t flags)
 {
     fprintf(stderr, "%s: [%s] Error during validation (0x%" PRIx64 "):\n",
-            path, id ? id : "unknown", flags);
+            path.c_str(), id.empty() ? "unknown" : id.c_str(), flags);
 
     struct mapping {
         uint64_t flag;
         const char *msg;
     } mappings[] = {
-        { MB_DEVICE_MISSING_ID,                        "Missing device ID" },
-        { MB_DEVICE_MISSING_CODENAMES,                 "Missing device codenames" },
-        { MB_DEVICE_MISSING_NAME,                      "Missing device name" },
-        { MB_DEVICE_MISSING_ARCHITECTURE,              "Missing device architecture" },
-        { MB_DEVICE_MISSING_SYSTEM_BLOCK_DEVS,         "Missing system block device paths" },
-        { MB_DEVICE_MISSING_CACHE_BLOCK_DEVS,          "Missing cache block device paths" },
-        { MB_DEVICE_MISSING_DATA_BLOCK_DEVS,           "Missing data block device paths" },
-        { MB_DEVICE_MISSING_BOOT_BLOCK_DEVS,           "Missing boot block device paths" },
-        { MB_DEVICE_MISSING_RECOVERY_BLOCK_DEVS,       "Missing recovery block device paths" },
-        { MB_DEVICE_MISSING_BOOT_UI_THEME,             "Missing Boot UI theme" },
-        { MB_DEVICE_MISSING_BOOT_UI_GRAPHICS_BACKENDS, "Missing Boot UI graphics backends" },
+        { mb::device::VALIDATE_MISSING_ID,                        "Missing device ID" },
+        { mb::device::VALIDATE_MISSING_CODENAMES,                 "Missing device codenames" },
+        { mb::device::VALIDATE_MISSING_NAME,                      "Missing device name" },
+        { mb::device::VALIDATE_MISSING_ARCHITECTURE,              "Missing device architecture" },
+        { mb::device::VALIDATE_MISSING_SYSTEM_BLOCK_DEVS,         "Missing system block device paths" },
+        { mb::device::VALIDATE_MISSING_CACHE_BLOCK_DEVS,          "Missing cache block device paths" },
+        { mb::device::VALIDATE_MISSING_DATA_BLOCK_DEVS,           "Missing data block device paths" },
+        { mb::device::VALIDATE_MISSING_BOOT_BLOCK_DEVS,           "Missing boot block device paths" },
+        { mb::device::VALIDATE_MISSING_RECOVERY_BLOCK_DEVS,       "Missing recovery block device paths" },
+        { mb::device::VALIDATE_MISSING_BOOT_UI_THEME,             "Missing Boot UI theme" },
+        { mb::device::VALIDATE_MISSING_BOOT_UI_GRAPHICS_BACKENDS, "Missing Boot UI graphics backends" },
+        { mb::device::VALIDATE_INVALID_ARCHITECTURE,              "Invalid device architecture" },
+        { mb::device::VALIDATE_INVALID_FLAGS,                     "Invalid device flags" },
+        { mb::device::VALIDATE_INVALID_BOOT_UI_FLAGS,             "Invalid Boot UI flags" },
         { 0, nullptr }
     };
 
@@ -150,50 +145,43 @@ static void print_validation_error(const char *path, const char *id,
     }
 }
 
-static bool validate(const char *path, const char *json, bool is_array)
+static bool validate(const std::string &path, const std::string &json,
+                     bool is_array)
 {
-    MbDeviceJsonError error;
+    mb::device::JsonError error;
 
     if (is_array) {
-        Device **devices = mb_device_new_list_from_json(json, &error);
-        if (!devices) {
-            print_json_error(path, &error);
+        std::vector<mb::device::Device> devices;
+
+        if (!mb::device::device_list_from_json(json, devices, error)) {
+            print_json_error(path, error);
             return false;
         }
 
         bool failed = false;
 
-        for (Device **iter = devices; *iter; ++iter) {
-            uint64_t flags = mb_device_validate(*iter);
+        for (auto const &device : devices) {
+            uint64_t flags = device.validate();
             if (flags) {
-                print_validation_error(path, mb_device_id(*iter), flags);
+                print_validation_error(path, device.id(), flags);
                 failed = true;
             }
-            mb_device_free(*iter);
         }
-        free(devices);
 
         if (failed) {
             return false;
         }
     } else {
-        Device *device = mb_device_new_from_json(json, &error);
-        if (!device) {
-            print_json_error(path, &error);
+        mb::device::Device device;
+
+        if (!mb::device::device_from_json(json, device, error)) {
+            print_json_error(path, error);
             return false;
         }
 
-        bool failed = false;
-        uint64_t flags = mb_device_validate(device);
-
+        uint64_t flags = device.validate();
         if (flags) {
-            print_validation_error(path, mb_device_id(device), flags);
-            failed = true;
-        }
-
-        mb_device_free(device);
-
-        if (failed) {
+            print_validation_error(path, device.id(), flags);
             return false;
         }
     }
@@ -256,33 +244,26 @@ int main(int argc, char *argv[])
         }
     }
 
-    json_set_alloc_funcs(&xmalloc, &free);
-
-    json_t *json_root = json_array();
+    Json::Value json_root;
+    Json::FastWriter json_fast_writer;
+    Json::StyledWriter json_styled_writer;
 
     for (int i = optind; i < argc; ++i) {
         try {
             YAML::Node root = YAML::LoadFile(argv[i]);
-            json_t *node = yaml_node_to_json_node(root);
+            Json::Value node = yaml_node_to_json_node(root);
+            std::string output = json_fast_writer.write(node);
 
-            char *output = json_dumps(node, JSON_COMPACT);
-            bool valid = validate(argv[i], output, json_is_array(node));
-            free(output);
-            if (!valid) {
+            if (!validate(argv[i], output, node.isArray())) {
                 return EXIT_FAILURE;
             }
 
-            if (json_is_array(node)) {
-                size_t index;
-                json_t *elem;
-
-                json_array_foreach(node, index, elem) {
-                    json_array_append(json_root, elem);
+            if (node.isArray()) {
+                for (auto const &item : node) {
+                    json_root.append(item);
                 }
-
-                json_decref(node);
             } else {
-                json_array_append_new(json_root, node);
+                json_root.append(node);
             }
         } catch (const std::exception &e) {
             fprintf(stderr, "%s: Failed to convert file: %s\n",
@@ -302,19 +283,16 @@ int main(int argc, char *argv[])
         }
     }
 
-    char *output;
+    std::string output;
     if (styled) {
-        output = json_dumps(json_root, JSON_INDENT(4) | JSON_SORT_KEYS);
+        output = json_styled_writer.write(json_root);
     } else {
-        output = json_dumps(json_root, JSON_COMPACT);
+        output = json_fast_writer.write(json_root);
     }
 
-    if (fputs(output, fp) == EOF) {
+    if (fwrite(output.data(), 1, output.size(), fp) != output.size()) {
         fprintf(stderr, "Failed to write JSON: %s\n", strerror(errno));
     }
-
-    free(output);
-    json_decref(json_root);
 
     if (output_file) {
         if (fclose(fp) != 0) {

@@ -41,8 +41,6 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
 
-typedef std::unique_ptr<Device, void (*)(Device *)> ScopedDevice;
-
 class InstallLocation
 {
 public:
@@ -79,7 +77,7 @@ public:
     bool autoMode;
 
     mbp::PatcherConfig *pc = nullptr;
-    std::vector<ScopedDevice> devices;
+    std::vector<mb::device::Device> devices;
 
     // Selected patcher
     mbp::Patcher *patcher = nullptr;
@@ -94,7 +92,7 @@ public:
     PatcherTask *task;
 
     // Selected device
-    Device *device = nullptr;
+    mb::device::Device *device = nullptr;
 
     // List of installation locations
     QList<InstallLocation> instLocs;

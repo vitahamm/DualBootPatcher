@@ -5,6 +5,7 @@ endif()
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(${MBP_JANSSON_INCLUDES})
+include_directories(${MBP_JSONCPP_INCLUDES})
 include_directories(${MBP_LIBARCHIVE_INCLUDES})
 include_directories(${MBP_LIBSEPOL_INCLUDES})
 include_directories(${MBP_OPENSSL_INCLUDES})
@@ -194,6 +195,7 @@ if(${MBP_BUILD_TARGET} STREQUAL android-system)
         mbcommon-static
         minizip-static
         ${MBP_JANSSON_LIBRARIES}
+        ${MBP_JSONCPP_LIBRARIES}
         ${MBP_PROCPS_NG_LIBRARIES}
         ${MBP_ZLIB_LIBRARIES}
     )
@@ -208,6 +210,7 @@ if(${MBP_BUILD_TARGET} STREQUAL android-system)
         mbcommon-static
         minizip-static
         ${MBP_JANSSON_LIBRARIES}
+        ${MBP_JSONCPP_LIBRARIES}
         ${MBP_LIBARCHIVE_LIBRARIES}
         ${MBP_LIBLZMA_LIBRARIES}
         ${MBP_LZ4_LIBRARIES}

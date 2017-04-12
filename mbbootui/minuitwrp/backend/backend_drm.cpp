@@ -158,19 +158,19 @@ static drm_surface *drm_create_surface(int width, int height)
         return nullptr;
     }
 
-    if (tw_pixel_format == TW_PXFMT_ABGR_8888) {
+    if (tw_device.tw_pixel_format() == mb::device::TwPixelFormat::ABGR_8888) {
         format = DRM_FORMAT_RGBA8888;
         base_format = GGL_PIXEL_FORMAT_RGBA_8888;
         printf("setting DRM_FORMAT_RGBA8888 and GGL_PIXEL_FORMAT_RGBA_8888\n");
-    } else if (tw_pixel_format == TW_PXFMT_BGRA_8888) {
+    } else if (tw_device.tw_pixel_format() == mb::device::TwPixelFormat::BGRA_8888) {
         format = DRM_FORMAT_ARGB8888;
         base_format = GGL_PIXEL_FORMAT_BGRA_8888;
         printf("setting DRM_FORMAT_ARGB8888 and GGL_PIXEL_FORMAT_BGRA_8888, GGL_PIXEL_FORMAT may not match!\n");
-    } else if (tw_pixel_format == TW_PXFMT_RGBA_8888) {
+    } else if (tw_device.tw_pixel_format() == mb::device::TwPixelFormat::RGBA_8888) {
         format = DRM_FORMAT_ABGR8888;
         base_format = GGL_PIXEL_FORMAT_BGRA_8888;
         printf("setting DRM_FORMAT_ABGR8888 and GGL_PIXEL_FORMAT_BGRA_8888, GGL_PIXEL_FORMAT may not match!\n");
-    } else if (tw_pixel_format == TW_PXFMT_RGBX_8888) {
+    } else if (tw_device.tw_pixel_format() == mb::device::TwPixelFormat::RGBX_8888) {
         format = DRM_FORMAT_XBGR8888;
         base_format = GGL_PIXEL_FORMAT_BGRA_8888;
         printf("setting DRM_FORMAT_XBGR8888 and GGL_PIXEL_FORMAT_BGRA_8888, GGL_PIXEL_FORMAT may not match!\n");

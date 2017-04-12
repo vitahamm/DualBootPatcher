@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2016  Andrew Gunnerson <andrewgunnerson@gmail.com>
+ * Copyright (C) 2014-2017  Andrew Gunnerson <andrewgunnerson@gmail.com>
  *
  * This file is part of MultiBootPatcher
  *
@@ -23,7 +23,6 @@
 #include <cassert>
 
 #include <mbdevice/json.h>
-#include <mbdevice/validate.h>
 #include <mbp/errors.h>
 
 #include <QtCore/QStringBuilder>
@@ -72,8 +71,7 @@ MainWindow::MainWindow(mbp::PatcherConfig *pc, QWidget *parent)
     QString lastDeviceId = d->settings.value(
             QStringLiteral("last_device"), QString()).toString();
     for (size_t i = 0; i < d->devices.size(); ++i) {
-        if (strcmp(mb_device_id(d->devices[i].get()),
-                   lastDeviceId.toUtf8().data()) == 0) {
+        if (d->devices[i].id() == lastDeviceId.toStdString()) {
             d->deviceSel->setCurrentIndex(i);
             break;
         }
@@ -120,7 +118,7 @@ void MainWindow::onDeviceSelected(int index)
 {
     Q_D(MainWindow);
     if (index < d->devices.size()) {
-        d->device = d->devices[index].get();
+        d->device = &d->devices[index];
     }
 
     if (d->state == MainWindowPrivate::FinishedPatching) {
@@ -160,9 +158,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
     if (!d->devices.empty()) {
         int deviceIndex = d->deviceSel->currentIndex();
-        const char *id = mb_device_id(d->devices[deviceIndex].get());
+        std::string id = d->devices[deviceIndex].id();
         d->settings.setValue(QStringLiteral("last_device"),
-                             QString::fromUtf8(id));
+                             QString::fromStdString(id));
     }
 
     QWidget::closeEvent(event);
@@ -432,26 +430,23 @@ void MainWindow::populateDevices()
 
     if (file.open(QIODevice::ReadOnly)) {
         QByteArray contents = file.readAll();
+        contents.push_back('\0');
         file.close();
 
-        MbDeviceJsonError error;
-        Device **devices =
-                mb_device_new_list_from_json(contents.data(), &error);
+        std::vector<mb::device::Device> devices;
+        mb::device::JsonError error;
 
-        if (devices) {
-            for (Device **iter = devices; *iter; ++iter) {
-                if (mb_device_validate(*iter) == 0) {
+        if (mb::device::device_list_from_json(contents.data(), devices, error)) {
+            for (auto &device : devices) {
+                if (device.validate() == 0) {
                     d->deviceSel->addItem(QStringLiteral("%1 - %2")
-                            .arg(QString::fromUtf8(mb_device_id(*iter)))
-                            .arg(QString::fromUtf8(mb_device_name(*iter))));
-                    d->devices.emplace_back(*iter, mb_device_free);
+                            .arg(QString::fromStdString(device.id()))
+                            .arg(QString::fromStdString(device.name())));
+                    d->devices.push_back(std::move(device));
                 } else {
-                    // Clean up unusable devices
-                    mb_device_free(*iter);
+                    qWarning("Failed validation on a device");
                 }
             }
-            // No need for array anymore
-            free(devices);
         } else {
             qWarning("Failed to load devices");
         }
@@ -620,7 +615,7 @@ void MainWindow::startPatching()
     FileInfoPtr fileInfo = new mbp::FileInfo();
     fileInfo->setInputPath(inputPath.toUtf8().constData());
     fileInfo->setOutputPath(outputPath.toUtf8().constData());
-    fileInfo->setDevice(d->device);
+    fileInfo->setDevice(*d->device);
     fileInfo->setRomId(romId.toUtf8().constData());
 
     d->patcher = d->pc->createPatcher(d->patcherId.toStdString());

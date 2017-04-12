@@ -34,16 +34,16 @@ public:
     explicit FileInfo();
     ~FileInfo();
 
-    std::string inputPath() const;
+    const std::string & inputPath() const;
     void setInputPath(std::string path);
 
-    std::string outputPath() const;
+    const std::string & outputPath() const;
     void setOutputPath(std::string path);
 
-    Device * device() const;
-    void setDevice(Device * const device);
+    const mb::device::Device & device() const;
+    void setDevice(mb::device::Device device);
 
-    std::string romId() const;
+    const std::string & romId() const;
     void setRomId(std::string id);
 
 private:

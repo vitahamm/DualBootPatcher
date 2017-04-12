@@ -42,7 +42,7 @@ if(${MBP_BUILD_TARGET} STREQUAL android-system)
         mblog-static
         ${MBP_LIBARCHIVE_LIBRARIES}
         ${MBP_ZLIB_LIBRARIES}
-        ${MBP_JANSSON_LIBRARIES}
+        ${MBP_JSONCPP_LIBRARIES}
     )
     target_link_libraries(
         fuse-sparse

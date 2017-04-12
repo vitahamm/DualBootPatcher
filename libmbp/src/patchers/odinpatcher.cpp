@@ -255,7 +255,7 @@ bool OdinPatcher::Impl::patchTar()
 
     std::string archDir(pc->dataDirectory());
     archDir += "/binaries/android/";
-    archDir += mb_device_architecture(info->device());
+    archDir += info->device().architecture();
 
     std::vector<CopySpec> toCopy{
         {
@@ -335,17 +335,11 @@ bool OdinPatcher::Impl::patchTar()
 
     updateDetails("multiboot/device.json");
 
-    char *json = mb_device_to_json(info->device());
-    if (!json) {
-        error = ErrorCode::MemoryAllocationError;
-        return false;
-    }
+    std::string json = mb::device::device_to_json(info->device());
 
     result = MinizipUtils::addFile(
             zf, "multiboot/device.json",
-            std::vector<unsigned char>(json, json + strlen(json)));
-    free(json);
-
+            std::vector<unsigned char>(json.begin(), json.end()));
     if (result != ErrorCode::NoError) {
         error = result;
         return false;

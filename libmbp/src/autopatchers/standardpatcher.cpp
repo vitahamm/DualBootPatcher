@@ -93,11 +93,11 @@ std::vector<std::string> StandardPatcher::existingFiles() const
     return { UpdaterScript, SystemTransferList };
 }
 
-static bool findItemsInString(const char *haystack,
-                              const char * const *needles)
+static bool findItemsInString(const std::string &haystack,
+                              const std::vector<std::string> &needles)
 {
-    for (auto iter = needles; *iter; ++iter) {
-        if (strstr(haystack, *iter)) {
+    for (auto const &needle : needles) {
+        if (haystack.find(needle) != std::string::npos) {
             return true;
         }
     }
@@ -248,9 +248,9 @@ replaceEdifyMount(std::vector<EdifyToken *> *tokens,
                   const std::vector<EdifyToken *>::iterator funcName,
                   const std::vector<EdifyToken *>::iterator leftParen,
                   const std::vector<EdifyToken *>::iterator rightParen,
-                  const char * const *systemDevs,
-                  const char * const *cacheDevs,
-                  const char * const *dataDevs)
+                  const std::vector<std::string> &systemDevs,
+                  const std::vector<std::string> &cacheDevs,
+                  const std::vector<std::string> &dataDevs)
 {
     // For the mount() edify function, replace with the corresponding
     // update-binary-tool command
@@ -302,9 +302,9 @@ replaceEdifyUnmount(std::vector<EdifyToken *> *tokens,
                     const std::vector<EdifyToken *>::iterator funcName,
                     const std::vector<EdifyToken *>::iterator leftParen,
                     const std::vector<EdifyToken *>::iterator rightParen,
-                    const char * const *systemDevs,
-                    const char * const *cacheDevs,
-                    const char * const *dataDevs)
+                    const std::vector<std::string> &systemDevs,
+                    const std::vector<std::string> &cacheDevs,
+                    const std::vector<std::string> &dataDevs)
 {
     // For the unmount() edify function, replace with the corresponding
     // update-binary-tool command
@@ -356,9 +356,9 @@ replaceEdifyRunProgram(std::vector<EdifyToken *> *tokens,
                        const std::vector<EdifyToken *>::iterator funcName,
                        const std::vector<EdifyToken *>::iterator leftParen,
                        const std::vector<EdifyToken *>::iterator rightParen,
-                       const char * const *systemDevs,
-                       const char * const *cacheDevs,
-                       const char * const *dataDevs)
+                       const std::vector<std::string> &systemDevs,
+                       const std::vector<std::string> &cacheDevs,
+                       const std::vector<std::string> &dataDevs)
 {
     bool foundReboot = false;
     bool foundMount = false;
@@ -505,9 +505,9 @@ replaceEdifyFormat(std::vector<EdifyToken *> *tokens,
                    const std::vector<EdifyToken *>::iterator funcName,
                    const std::vector<EdifyToken *>::iterator leftParen,
                    const std::vector<EdifyToken *>::iterator rightParen,
-                   const char * const *systemDevs,
-                   const char * const *cacheDevs,
-                   const char * const *dataDevs)
+                   const std::vector<std::string> &systemDevs,
+                   const std::vector<std::string> &cacheDevs,
+                   const std::vector<std::string> &dataDevs)
 {
     // For the format() edify function, replace with the corresponding
     // update-binary-tool command
@@ -582,10 +582,10 @@ bool StandardPatcher::patchUpdater(const std::string &directory)
     EdifyTokenizer::dump(tokens);
 #endif
 
-    Device *device = m_impl->info->device();
-    auto systemDevs = mb_device_system_block_devs(device);
-    auto cacheDevs = mb_device_cache_block_devs(device);
-    auto dataDevs = mb_device_data_block_devs(device);
+    auto const &device = m_impl->info->device();
+    auto const &systemDevs = device.system_block_devs();
+    auto const &cacheDevs = device.cache_block_devs();
+    auto const &dataDevs = device.data_block_devs();
 
     std::vector<EdifyToken *>::iterator begin = tokens.begin();
     std::vector<EdifyToken *>::iterator end;

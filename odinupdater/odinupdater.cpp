@@ -17,6 +17,7 @@
  * along with MultiBootPatcher.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <vector>
 
 #include <cerrno>
@@ -35,7 +36,6 @@
 
 // libmbdevice
 #include "mbdevice/json.h"
-#include "mbdevice/validate.h"
 
 // libmbutil
 #include "mbutil/command.h"
@@ -233,10 +233,7 @@ static bool load_sales_code()
 
 static bool load_block_devs()
 {
-    system_block_dev[0] = '\0';
-    boot_block_dev[0] = '\0';
-
-    Device *device;
+    mb::device::Device device;
 
     {
         archive *a = archive_read_new();
@@ -276,54 +273,41 @@ static bool load_block_devs()
         }
 
         // Buffer is already NULL-terminated
-        MbDeviceJsonError ret;
-        device = mb_device_new_from_json(buf.data(), &ret);
-        if (!device) {
+        mb::device::JsonError ret;
+        if (!mb::device::device_from_json(buf.data(), device, ret)) {
             error("Failed to load %s", DEVICE_JSON_FILE);
             return false;
         }
     }
 
-    auto free_device = mb::util::finally([&]{
-        mb_device_free(device);
-    });
-
-    auto flags = mb_device_validate(device);
+    auto flags = device.validate();
     if (flags != 0) {
         error("Device definition file is invalid: %" PRIu64, flags);
         return false;
     }
 
-    auto system_devs = mb_device_system_block_devs(device);
-    auto boot_devs = mb_device_boot_block_devs(device);
+    auto is_blk_device = [](const std::string &path) {
+        struct stat sb;
+        return stat(path.c_str(), &sb) == 0 && S_ISBLK(sb.st_mode);
+    };
 
-    struct stat sb;
+    auto system_devs = device.system_block_devs();
+    auto boot_devs = device.boot_block_devs();
 
-    if (system_devs) {
-        for (auto it = system_devs; *it; ++it) {
-            if (stat(*it, &sb) == 0 && S_ISBLK(sb.st_mode)) {
-                system_block_dev = *it;
-                break;
-            }
-        }
-    }
-    if (boot_devs) {
-        for (auto it = boot_devs; *it; ++it) {
-            if (stat(*it, &sb) == 0 && S_ISBLK(sb.st_mode)) {
-                boot_block_dev = *it;
-                break;
-            }
-        }
-    }
-
-    if (system_block_dev.empty()) {
+    auto it = std::find_if(system_devs.begin(), system_devs.end(),
+                           is_blk_device);
+    if (it == system_devs.end()) {
         error("%s: No system block device specified", DEVICE_JSON_FILE);
         return false;
     }
-    if (boot_block_dev.empty()) {
+    system_block_dev = *it;
+
+    it = std::find_if(boot_devs.begin(), boot_devs.end(), is_blk_device);
+    if (it == boot_devs.end()) {
         error("%s: No boot block device specified", DEVICE_JSON_FILE);
         return false;
     }
+    boot_block_dev = *it;
 
     info("System block device: %s", system_block_dev.c_str());
     info("Boot block device: %s", boot_block_dev.c_str());

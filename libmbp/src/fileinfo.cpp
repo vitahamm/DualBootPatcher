@@ -27,7 +27,7 @@ namespace mbp
 class FileInfo::Impl
 {
 public:
-    Device *device;
+    mb::device::Device device;
     std::string inputPath;
     std::string outputPath;
     std::string romId;
@@ -60,7 +60,7 @@ FileInfo::~FileInfo()
  *
  * \return File path
  */
-std::string FileInfo::inputPath() const
+const std::string & FileInfo::inputPath() const
 {
     return m_impl->inputPath;
 }
@@ -75,7 +75,7 @@ void FileInfo::setInputPath(std::string path)
     m_impl->inputPath = std::move(path);
 }
 
-std::string FileInfo::outputPath() const
+const std::string & FileInfo::outputPath() const
 {
     return m_impl->outputPath;
 }
@@ -90,7 +90,7 @@ void FileInfo::setOutputPath(std::string path)
  *
  * \return Device
  */
-Device * FileInfo::device() const
+const mb::device::Device & FileInfo::device() const
 {
     return m_impl->device;
 }
@@ -100,12 +100,12 @@ Device * FileInfo::device() const
  *
  * \param device Target device
  */
-void FileInfo::setDevice(Device * const device)
+void FileInfo::setDevice(mb::device::Device device)
 {
-    m_impl->device = device;
+    m_impl->device = std::move(device);
 }
 
-std::string FileInfo::romId() const
+const std::string & FileInfo::romId() const
 {
     return m_impl->romId;
 }
