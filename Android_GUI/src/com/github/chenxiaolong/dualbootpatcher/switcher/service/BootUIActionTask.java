@@ -24,7 +24,6 @@ import android.util.Log;
 
 import com.github.chenxiaolong.dualbootpatcher.LogUtils;
 import com.github.chenxiaolong.dualbootpatcher.Version;
-import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbDevice.Device;
 import com.github.chenxiaolong.dualbootpatcher.patcher.PatcherUtils;
 import com.github.chenxiaolong.dualbootpatcher.socket.MbtoolConnection;
 import com.github.chenxiaolong.dualbootpatcher.socket.exceptions.MbtoolCommandException;
@@ -41,6 +40,7 @@ import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import io.noobdev.dualbootpatcher.nativelib.Device;
 import mbtool.daemon.v3.FileOpenFlag;
 import mbtool.daemon.v3.PathDeleteFlag;
 
@@ -144,7 +144,7 @@ public final class BootUIActionTask extends BaseServiceTask {
 
     private boolean checkSupported() {
         Device device = PatcherUtils.getCurrentDevice(getContext());
-        return device != null && device.isTwSupported();
+        return device != null && device.twSupported();
     }
 
     /**

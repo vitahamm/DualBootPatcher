@@ -26,6 +26,8 @@ if(MBP_TOP_LEVEL_BUILD)
 
     # List of ExternalProject directories to run "make clean" in
     set(RECURSIVE_CLEAN_DIRS)
+    # List of ExternalProject directories to run "make clean-swig" in
+    set(RECURSIVE_CLEAN_DIRS_SWIG)
 
     # FIXME: Required until https://github.com/android-ndk/ndk/issues/222 is fixed
     set(ENV{ANDROID_NDK} "${ndk_path}")
@@ -136,6 +138,7 @@ if(MBP_TOP_LEVEL_BUILD)
 
             ExternalProject_Get_Property(android-app_${abi} BINARY_DIR)
             list(APPEND RECURSIVE_CLEAN_DIRS ${BINARY_DIR})
+            list(APPEND RECURSIVE_CLEAN_DIRS_SWIG ${BINARY_DIR})
         endif()
 
         set(ARCHIVE_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/bootui/${abi}/bootui.zip)
@@ -213,8 +216,14 @@ if(MBP_TOP_LEVEL_BUILD)
     foreach(_dir ${RECURSIVE_CLEAN_DIRS})
         string(CONCAT CLEAN_CONTENTS
                ${CLEAN_CONTENTS}
-               "message(STATUS \"Cleaning ${_dir}\")\n"
+               "message(STATUS \"Running \\\"clean\\\" target in ${_dir}\")\n"
                "execute_process(COMMAND \${CMAKE_COMMAND} --build \"${_dir}\" --target clean)\n")
+    endforeach()
+    foreach(_dir ${RECURSIVE_CLEAN_DIRS_SWIG})
+        string(CONCAT CLEAN_CONTENTS
+               ${CLEAN_CONTENTS}
+               "message(STATUS \"Running \\\"clean-swig\\\" target in ${_dir}\")\n"
+               "execute_process(COMMAND \${CMAKE_COMMAND} --build \"${_dir}\" --target clean-swig)\n")
     endforeach()
 
     file(WRITE
@@ -224,6 +233,12 @@ if(MBP_TOP_LEVEL_BUILD)
     add_custom_target(
         clean-android
         ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/clean-android.cmake
+        VERBATIM
+    )
+
+    add_custom_target(
+        clean-result
+        ${CMAKE_COMMAND} -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}/result"
         VERBATIM
     )
 endif()

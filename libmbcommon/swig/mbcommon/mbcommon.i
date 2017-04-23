@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014  Andrew Gunnerson <andrewgunnerson@gmail.com>
+ * Copyright (C) 2017  Andrew Gunnerson <andrewgunnerson@gmail.com>
  *
  * This file is part of MultiBootPatcher
  *
@@ -17,33 +17,27 @@
  * along with MultiBootPatcher.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mbp/cwrapper/ccommon.h"
+%module mbcommon
 
-#include <cassert>
-#include <cstdlib>
+%{
+#include "mbcommon/version.h"
+%}
 
+%import "swigcommon/swigcommon.i"
+%import "swigcommon/style/java.i"
 
-extern "C" {
+// Ignore C variants of functions
+%ignore mb_version();
+%ignore mb_git_version();
 
-void mbp_free(void *data)
-{
-    if (data == nullptr) {
-        return;
+// For macros
+%import "mbcommon/common.h"
+
+// libmbcommon
+%include "mbcommon/version.h"
+
+%pragma(java) jniclasscode=%{
+    static {
+        System.loadLibrary("mbcommon-jni");
     }
-
-    std::free(data);
-}
-
-void mbp_free_array(void **array)
-{
-    if (array == nullptr) {
-        return;
-    }
-
-    for (void **temp = array; *temp != nullptr; ++temp) {
-        std::free(*temp);
-    }
-    std::free(array);
-}
-
-}
+%}

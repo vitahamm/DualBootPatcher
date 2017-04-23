@@ -31,8 +31,6 @@ public class LibC {
             Native.register(CWrapper.class, "c");
         }
 
-        public static native void free(Pointer ptr);
-
         public static native /* pid_t */ int getpid();
     }
 }

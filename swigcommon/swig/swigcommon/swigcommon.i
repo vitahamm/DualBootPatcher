@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014  Andrew Gunnerson <andrewgunnerson@gmail.com>
+ * Copyright (C) 2017  Andrew Gunnerson <andrewgunnerson@gmail.com>
  *
  * This file is part of MultiBootPatcher
  *
@@ -17,17 +17,20 @@
  * along with MultiBootPatcher.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+%module swigcommon
 
-#include "mbcommon/common.h"
+// C++ standard library
+%include "std_string.i"
+%include "std_vector.i"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// Explicit std::vector instantiations
+%template(StringVector) std::vector<std::string>;
 
-MB_EXPORT void mbp_free(void *data);
-MB_EXPORT void mbp_free_array(void **array);
+// C standard library
+%include "stdint.i"
 
-#ifdef __cplusplus
-}
-#endif
+%pragma(java) jniclasscode=%{
+    static {
+        System.loadLibrary("swigcommon-jni");
+    }
+%}

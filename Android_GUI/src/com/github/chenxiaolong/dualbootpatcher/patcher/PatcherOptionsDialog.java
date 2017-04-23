@@ -46,12 +46,14 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.MaterialDialog.SingleButtonCallback;
 import com.github.chenxiaolong.dualbootpatcher.R;
 import com.github.chenxiaolong.dualbootpatcher.RomUtils;
-import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbDevice.Device;
 import com.github.chenxiaolong.dualbootpatcher.patcher.PatcherOptionsDialog.LoaderResult;
 import com.github.chenxiaolong.dualbootpatcher.patcher.PatcherUtils.InstallLocation;
 
 import java.util.ArrayList;
 import java.util.Collections;
+
+import io.noobdev.dualbootpatcher.nativelib.Device;
+import io.noobdev.dualbootpatcher.nativelib.StringVector;
 
 public class PatcherOptionsDialog extends DialogFragment implements LoaderCallbacks<LoaderResult> {
     private static final String ARG_ID = "id";
@@ -159,7 +161,7 @@ public class PatcherOptionsDialog extends DialogFragment implements LoaderCallba
                         if (owner != null) {
                             int position = mDeviceSpinner.getSelectedItemPosition();
                             Device device = mDevices.get(position);
-                            if (device.getId().equals("hero2qlte")) {
+                            if (device.id().equals("hero2qlte")) {
                                 Intent intent = getRickRollIntent();
                                 getActivity().startActivity(intent);
                             } else {
@@ -268,17 +270,28 @@ public class PatcherOptionsDialog extends DialogFragment implements LoaderCallba
 
     private static Device getRickRollDevice() {
         if (sHero2qlteDevice == null) {
+            StringVector codenames = new StringVector();
+            codenames.add("hero2qlte");
+            codenames.add("hero2qlteatt");
+            codenames.add("hero2qltespr");
+            codenames.add("hero2qltetmo");
+            codenames.add("hero2qltevzw");
+            StringVector blockDevs = new StringVector();
+            blockDevs.add("/dev/null");
+
             sHero2qlteDevice = new Device();
             sHero2qlteDevice.setId("hero2qlte");
-            sHero2qlteDevice.setCodenames(new String[]{"hero2qlte", "hero2qlteatt",
-                    "hero2qltespr", "hero2qltetmo", "hero2qltevzw"});
+            sHero2qlteDevice.setCodenames(codenames);
             sHero2qlteDevice.setName("Samsung Galaxy S 7 Edge (Qcom)");
             sHero2qlteDevice.setArchitecture("arm64-v8a");
-            sHero2qlteDevice.setSystemBlockDevs(new String[]{"/dev/null"});
-            sHero2qlteDevice.setCacheBlockDevs(new String[]{"/dev/null"});
-            sHero2qlteDevice.setDataBlockDevs(new String[]{"/dev/null"});
-            sHero2qlteDevice.setBootBlockDevs(new String[]{"/dev/null"});
-            sHero2qlteDevice.setExtraBlockDevs(new String[]{"/dev/null"});
+            sHero2qlteDevice.setSystemBlockDevs(blockDevs);
+            sHero2qlteDevice.setCacheBlockDevs(blockDevs);
+            sHero2qlteDevice.setDataBlockDevs(blockDevs);
+            sHero2qlteDevice.setBootBlockDevs(blockDevs);
+            sHero2qlteDevice.setExtraBlockDevs(blockDevs);
+
+            codenames.delete();
+            blockDevs.delete();
         }
         return sHero2qlteDevice;
     }
@@ -298,12 +311,12 @@ public class PatcherOptionsDialog extends DialogFragment implements LoaderCallba
         if (devices != null) {
             for (Device device : devices) {
                 mDevices.add(device);
-                mDevicesNames.add(String.format("%s - %s", device.getId(), device.getName()));
+                mDevicesNames.add(String.format("%s - %s", device.id(), device.name()));
 
-                if (device.getId().equals("hero2lte") || device.getId().equals("herolte")) {
+                if (device.id().equals("hero2lte") || device.id().equals("herolte")) {
                     Device rrd = getRickRollDevice();
                     mDevices.add(rrd);
-                    mDevicesNames.add(String.format("%s - %s", rrd.getId(), rrd.getName()));
+                    mDevicesNames.add(String.format("%s - %s", rrd.id(), rrd.name()));
                 }
             }
         }
@@ -315,15 +328,20 @@ public class PatcherOptionsDialog extends DialogFragment implements LoaderCallba
 
             if (deviceId == null) {
                 if (currentDevice != null) {
-                    deviceId = currentDevice.getId();
+                    deviceId = currentDevice.id();
                 } else {
                     Device rrd = getRickRollDevice();
                     String codename = RomUtils.getDeviceCodename(getActivity());
-                    for (String c : rrd.getCodenames()) {
-                        if (c.equals(codename)) {
-                            deviceId = rrd.getId();
-                            break;
+                    StringVector codenames = rrd.codenames();
+                    try {
+                        for (int i = 0; i < codenames.size(); i++) {
+                            if (codenames.get(i).equals(codename)) {
+                                deviceId = rrd.id();
+                                break;
+                            }
                         }
+                    } finally {
+                        codenames.delete();
                     }
                 }
             }
@@ -358,7 +376,7 @@ public class PatcherOptionsDialog extends DialogFragment implements LoaderCallba
     private void selectDeviceId(String deviceId) {
         for (int i = 0; i < mDevices.size(); i++) {
             Device device = mDevices.get(i);
-            if (device.getId().equals(deviceId)) {
+            if (device.id().equals(deviceId)) {
                 mDeviceSpinner.setSelection(i);
                 return;
             }

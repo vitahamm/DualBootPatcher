@@ -26,7 +26,6 @@ import com.github.chenxiaolong.dualbootpatcher.FileUtils;
 import com.github.chenxiaolong.dualbootpatcher.R;
 import com.github.chenxiaolong.dualbootpatcher.RomUtils;
 import com.github.chenxiaolong.dualbootpatcher.ThreadUtils;
-import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbDevice.Device;
 import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbp.PatcherConfig;
 import com.github.chenxiaolong.dualbootpatcher.nativelib.libmiscstuff.LibMiscStuff;
 
@@ -34,7 +33,14 @@ import org.apache.commons.io.Charsets;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
+
+import io.noobdev.dualbootpatcher.nativelib.Device;
+import io.noobdev.dualbootpatcher.nativelib.DeviceVector;
+import io.noobdev.dualbootpatcher.nativelib.JsonError;
+import io.noobdev.dualbootpatcher.nativelib.StringVector;
+import io.noobdev.dualbootpatcher.nativelib.mbdevice;
 
 public class PatcherUtils {
     public static final String TAG = PatcherUtils.class.getSimpleName();
@@ -91,18 +97,25 @@ public class PatcherUtils {
 
         if (sDevices == null) {
             File path = new File(getTargetDirectory(context) + File.separator + "devices.json");
+            DeviceVector dv = new DeviceVector();
+            JsonError error = new JsonError();
+
             try {
                 String json = org.apache.commons.io.FileUtils.readFileToString(
                         path, Charsets.UTF_8);
 
-                Device[] devices = Device.newListFromJson(json);
+                if (!mbdevice.deviceListFromJson(json, dv, error)) {
+                    throw new IOException("Failed to load device definitions");
+                }
+
                 ArrayList<Device> validDevices = new ArrayList<>();
 
-                if (devices != null) {
-                    for (Device d : devices) {
-                        if (d.validate() == 0) {
-                            validDevices.add(d);
-                        }
+                for (int i = 0; i < dv.size(); i++) {
+                    // Non-owning reference
+                    Device deviceRef = dv.get(i);
+                    if (deviceRef.validate().equals(BigInteger.ZERO)) {
+                        // Copy for owning reference
+                        validDevices.add(new Device(deviceRef));
                     }
                 }
 
@@ -111,6 +124,9 @@ public class PatcherUtils {
                 }
             } catch (IOException e) {
                 Log.w(TAG, "Failed to read " + path, e);
+            } finally {
+                dv.delete();
+                error.delete();
             }
         }
 
@@ -127,11 +143,16 @@ public class PatcherUtils {
             if (devices != null) {
                 outer:
                 for (Device d : devices) {
-                    for (String codename : d.getCodenames()) {
-                        if (realCodename.equals(codename)) {
-                            sCurrentDevice = d;
-                            break outer;
+                    StringVector sv = d.codenames();
+                    try {
+                        for (int i = 0; i < sv.size(); i++) {
+                            if (realCodename.equals(sv.get(i))) {
+                                sCurrentDevice = d;
+                                break outer;
+                            }
                         }
+                    } finally {
+                        sv.delete();
                     }
                 }
             }

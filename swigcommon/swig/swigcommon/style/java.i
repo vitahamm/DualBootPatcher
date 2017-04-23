@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015  Andrew Gunnerson <andrewgunnerson@gmail.com>
+ * Copyright (C) 2017  Andrew Gunnerson <andrewgunnerson@gmail.com>
  *
  * This file is part of MultiBootPatcher
  *
@@ -17,23 +17,9 @@
  * along with MultiBootPatcher.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+// Use native Java enums
+%include "enums.swg"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct CFileInfo;
-typedef struct CFileInfo CFileInfo;
-
-struct CPatcherConfig;
-typedef struct CPatcherConfig CPatcherConfig;
-
-struct CPatcher;
-typedef struct CPatcher CPatcher;
-struct CAutoPatcher;
-typedef struct CAutoPatcher CAutoPatcher;
-
-#ifdef __cplusplus
-}
-#endif
+// Rename functions and methods to be in camelcase
+%rename("%(lowercamelcase)s", %$isfunction) "";
+%rename("%(lowercamelcase)s", %$ismember) "";

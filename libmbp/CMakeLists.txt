@@ -11,12 +11,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 set(MBP_SOURCES
     src/fileinfo.cpp
     src/patcherconfig.cpp
-    # C wrapper API
-    src/cwrapper/ccommon.cpp
-    src/cwrapper/cfileinfo.cpp
-    src/cwrapper/cpatcherconfig.cpp
-    src/cwrapper/cpatcherinterface.cpp
-    src/cwrapper/private/util.cpp
     # Edify tokenizer
     src/edify/tokenizer.cpp
     # Private classes
@@ -33,6 +27,8 @@ set(MBP_SOURCES
     # SHA1 library
     external/sha.cpp
 )
+
+set(MBP_SWIG_SOURCE swig/mbp/mbp.i)
 
 if(WIN32)
     list(APPEND MBP_SOURCES
@@ -121,6 +117,48 @@ elseif(${MBP_BUILD_TARGET} STREQUAL android-app
     # Install library
     install(
         TARGETS mbp-shared
+        LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+        RUNTIME DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+        #ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+    )
+endif()
+
+# swig
+if(${MBP_BUILD_TARGET} STREQUAL android-app)
+    set_source_files_properties(
+        ${MBP_SWIG_SOURCE}
+        PROPERTIES
+        CPLUSPLUS ON
+    )
+
+    swig_add_module(
+        mbp-jni
+        java
+        ${MBP_SWIG_SOURCE}
+    )
+
+    swig_link_libraries(
+        mbp-jni
+        mbp-shared
+    )
+
+    if(NOT MSVC)
+        set_target_properties(
+            mbp-jni
+            PROPERTIES
+            CXX_STANDARD 11
+            CXX_STANDARD_REQUIRED 1
+        )
+    endif()
+
+    target_compile_options(
+        mbp-jni
+        PRIVATE
+        -fexceptions
+    )
+
+    install(
+        TARGETS mbp-jni
         LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
         RUNTIME DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
         #ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries

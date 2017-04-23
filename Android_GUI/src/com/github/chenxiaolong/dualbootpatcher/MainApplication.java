@@ -23,6 +23,7 @@ import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
 
+import com.github.chenxiaolong.dualbootpatcher.nativelib.libmiscstuff.LibMiscStuff;
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
 
@@ -61,6 +62,8 @@ public class MainApplication extends Application {
         boolean useDarkTheme = prefs.getBoolean("use_dark_theme", false);
 
         setUseDarkTheme(useDarkTheme);
+
+        LibMiscStuff.mblogSetLogcat();
     }
 
     public static boolean getUseDarkTheme() {

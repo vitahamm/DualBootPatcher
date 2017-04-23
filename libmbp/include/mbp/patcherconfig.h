@@ -60,8 +60,8 @@ public:
 
     PatcherConfig(const PatcherConfig &) = delete;
     PatcherConfig(PatcherConfig &&) = default;
-    PatcherConfig & operator=(const PatcherConfig &) & = delete;
-    PatcherConfig & operator=(PatcherConfig &&) & = default;
+    PatcherConfig & operator=(const PatcherConfig &) = delete;
+    PatcherConfig & operator=(PatcherConfig &&) = default;
 
 private:
     class Impl;

@@ -15,6 +15,8 @@ set(MBDEVICE_TESTS_SOURCES
     tests/test_json.cpp
 )
 
+set(MBDEVICE_SWIG_SOURCE swig/mbdevice/mbdevice.i)
+
 set(variants)
 
 if(${MBP_BUILD_TARGET} STREQUAL android-system)
@@ -123,4 +125,46 @@ if(MBP_ENABLE_TESTS)
         # Only need to build the tests once
         break()
     endforeach()
+endif()
+
+# swig
+if(${MBP_BUILD_TARGET} STREQUAL android-app)
+    set_source_files_properties(
+        ${MBDEVICE_SWIG_SOURCE}
+        PROPERTIES
+        CPLUSPLUS ON
+    )
+
+    swig_add_module(
+        mbdevice-jni
+        java
+        ${MBDEVICE_SWIG_SOURCE}
+    )
+
+    swig_link_libraries(
+        mbdevice-jni
+        mbdevice-shared
+    )
+
+    if(NOT MSVC)
+        set_target_properties(
+            mbdevice-jni
+            PROPERTIES
+            CXX_STANDARD 11
+            CXX_STANDARD_REQUIRED 1
+        )
+    endif()
+
+    target_compile_options(
+        mbdevice-jni
+        PRIVATE
+        -fexceptions
+    )
+
+    install(
+        TARGETS mbdevice-jni
+        LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+        RUNTIME DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+        #ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+    )
 endif()

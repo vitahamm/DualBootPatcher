@@ -173,6 +173,9 @@ include(${MBP_TARGET_CONFIG_FILE})
 # Compile and link flags
 include(cmake/CompilerFlags.cmake)
 
+# Swig options
+include(cmake/Swig.cmake)
+
 # Third party binaries
 add_subdirectory(thirdparty)
 
@@ -180,6 +183,7 @@ add_subdirectory(thirdparty)
 include(cmake/Dependencies.cmake)
 
 set(MBP_GLOBAL_INCLUDE_DIRS
+    # C/C++
     libmbbootimg/include
     libmbcommon/include
     libmbdevice/include
@@ -189,6 +193,10 @@ set(MBP_GLOBAL_INCLUDE_DIRS
     libmbsign/include
     libmbsparse/include
     libmbutil/include
+    # Swig
+    libmbcommon/swig
+    libmbdevice/swig
+    swigcommon/swig
 )
 
 include_directories(${MBP_GLOBAL_INCLUDE_DIRS})
@@ -203,6 +211,7 @@ add_subdirectory(libmbp)
 add_subdirectory(libmbsign)
 add_subdirectory(libmbsparse)
 add_subdirectory(libmbutil)
+add_subdirectory(swigcommon)
 add_subdirectory(data)
 add_subdirectory(mbtool)
 add_subdirectory(mbbootui)

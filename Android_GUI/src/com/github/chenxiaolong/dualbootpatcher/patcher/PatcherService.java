@@ -28,8 +28,6 @@ import android.util.Log;
 import com.github.chenxiaolong.dualbootpatcher.BuildConfig;
 import com.github.chenxiaolong.dualbootpatcher.LogUtils;
 import com.github.chenxiaolong.dualbootpatcher.ThreadPoolService;
-import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbDevice.Device;
-import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbcommon;
 import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbp.FileInfo;
 import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbp.Patcher;
 import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbp.Patcher.ProgressListener;
@@ -47,6 +45,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import io.noobdev.dualbootpatcher.nativelib.Device;
+import io.noobdev.dualbootpatcher.nativelib.mbcommon;
 
 public class PatcherService extends ThreadPoolService {
     private static final String TAG = PatcherService.class.getSimpleName();
@@ -596,15 +597,15 @@ public class PatcherService extends ThreadPoolService {
             String outputName = queryDisplayName(cr, mOutputUri);
 
             Log.d(TAG, "Android GUI version: " + BuildConfig.VERSION_NAME);
-            Log.d(TAG, "libmbp version: " + LibMbcommon.getVersion() +
-                    " (" + LibMbcommon.getGitVersion() + ")");
+            Log.d(TAG, "libmbp version: " + mbcommon.version() +
+                    " (" + mbcommon.gitVersion() + ")");
             Log.d(TAG, "Patching file:");
             Log.d(TAG, "- Patcher ID:  " + mPatcherId);
             Log.d(TAG, "- Input URI:   " + mInputUri);
             Log.d(TAG, "- Input name:  " + inputName);
             Log.d(TAG, "- Output URI:  " + mOutputUri);
             Log.d(TAG, "- Output name: " + outputName);
-            Log.d(TAG, "- Device:      " + mDevice.getId());
+            Log.d(TAG, "- Device:      " + mDevice.id());
             Log.d(TAG, "- ROM ID:      " + mRomId);
 
             // Make sure patcher is extracted first

@@ -69,7 +69,12 @@ android {
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['src', '../external/flatbuffers/java']
+            java.srcDirs = [
+                'src',
+                '../external/flatbuffers/java',
+                // Doesn't matter which ABI
+                '@CMAKE_BINARY_DIR@/android/result/java/armeabi-v7a'
+            ]
             resources.srcDirs = ['src']
             aidl.srcDirs = ['src']
             renderscript.srcDirs = ['src']

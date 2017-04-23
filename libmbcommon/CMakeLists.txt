@@ -40,6 +40,8 @@ set(MBCOMMON_TESTS_SOURCES
     tests/test_string.cpp
 )
 
+set(MBCOMMON_SWIG_SOURCE swig/mbcommon/mbcommon.i)
+
 if(WIN32)
     list(APPEND MBCOMMON_SOURCES src/file/win32.cpp)
 
@@ -171,4 +173,46 @@ if(MBP_ENABLE_TESTS)
         # Only need to build the tests once
         break()
     endforeach()
+endif()
+
+# swig
+if(${MBP_BUILD_TARGET} STREQUAL android-app)
+    set_source_files_properties(
+        ${MBCOMMON_SWIG_SOURCE}
+        PROPERTIES
+        CPLUSPLUS ON
+    )
+
+    swig_add_module(
+        mbcommon-jni
+        java
+        ${MBCOMMON_SWIG_SOURCE}
+    )
+
+    swig_link_libraries(
+        mbcommon-jni
+        mbcommon-shared
+    )
+
+    if(NOT MSVC)
+        set_target_properties(
+            mbcommon-jni
+            PROPERTIES
+            CXX_STANDARD 11
+            CXX_STANDARD_REQUIRED 1
+        )
+    endif()
+
+    target_compile_options(
+        mbcommon-jni
+        PRIVATE
+        -fexceptions
+    )
+
+    install(
+        TARGETS mbcommon-jni
+        LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+        RUNTIME DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+        #ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+    )
 endif()

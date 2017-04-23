@@ -30,7 +30,6 @@ import com.github.chenxiaolong.dualbootpatcher.RomUtils.RomInformation;
 import com.github.chenxiaolong.dualbootpatcher.ThreadUtils;
 import com.github.chenxiaolong.dualbootpatcher.Version;
 import com.github.chenxiaolong.dualbootpatcher.Version.VersionParseException;
-import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMbDevice.Device;
 import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMiniZip.MiniZipEntry;
 import com.github.chenxiaolong.dualbootpatcher.nativelib.LibMiniZip.MiniZipInputFile;
 import com.github.chenxiaolong.dualbootpatcher.nativelib.libmiscstuff.LibMiscStuff;
@@ -49,6 +48,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 
+import io.noobdev.dualbootpatcher.nativelib.Device;
+import io.noobdev.dualbootpatcher.nativelib.StringVector;
 import mbtool.daemon.v3.FileOpenFlag;
 
 public class SwitcherUtils {
@@ -86,10 +87,16 @@ public class SwitcherUtils {
         Device device = PatcherUtils.getCurrentDevice(context);
 
         if (device != null) {
-            for (String blockDev : device.getBootBlockDevs()) {
-                if (pathExists(iface, blockDev)) {
-                    return blockDev;
+            StringVector sv = device.bootBlockDevs();
+            try {
+                for (int i = 0; i < sv.size(); i++) {
+                    String blockDev = sv.get(i);
+                    if (pathExists(iface, blockDev)) {
+                        return blockDev;
+                    }
                 }
+            } finally {
+                sv.delete();
             }
         }
 
@@ -100,7 +107,12 @@ public class SwitcherUtils {
         Device device = PatcherUtils.getCurrentDevice(context);
 
         if (device != null) {
-            return device.getBlockDevBaseDirs();
+            StringVector sv = device.blockDevBaseDirs();
+            String[] devices = new String[(int) sv.size()]; // TODO
+            for (int i = 0; i < sv.size(); i++) {
+                devices[i] = sv.get(i);
+            }
+            return devices;
         }
 
         return null;
